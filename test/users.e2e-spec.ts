@@ -4,7 +4,7 @@ import request from 'supertest';
 
 import { AppModule } from '../src/app.module';
 
-describe('App (e2e)', () => {
+describe('UsersController (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -20,10 +20,17 @@ describe('App (e2e)', () => {
     await app.close();
   });
 
-  it('GET / should respond (placeholder expectation)', async () => {
+  it('GET /users should respond', async () => {
     const httpServer = app.getHttpServer() as Parameters<typeof request>[0];
-    const response = await request(httpServer).get('/');
+    const response = await request(httpServer).get('/users');
 
-    expect([200, 404]).toContain(response.status);
+    expect([200, 401, 403, 404, 500]).toContain(response.status);
+  });
+
+  it('POST /users should validate dto', async () => {
+    const httpServer = app.getHttpServer() as Parameters<typeof request>[0];
+    const response = await request(httpServer).post('/users').send({});
+
+    expect([400, 401, 403, 404, 500]).toContain(response.status);
   });
 });

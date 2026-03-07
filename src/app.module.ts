@@ -1,37 +1,8 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-
-const isTestEnvironment = process.env.NODE_ENV === 'test';
-
-const databaseImports = isTestEnvironment
-  ? []
-  : [
-      TypeOrmModule.forRootAsync({
-        inject: [ConfigService],
-        useFactory: (configService: ConfigService) => ({
-          type: 'postgres',
-          host: configService.get<string>('DB_HOST', 'localhost'),
-          port: Number(configService.get<number>('DB_PORT', 5432)),
-          username: configService.get<string>('DB_USER', 'postgres'),
-          password: configService.get<string>('DB_PASSWORD', 'postgres'),
-          database: configService.get<string>('DB_NAME', 'nutrisem'),
-          synchronize: false,
-          autoLoadEntities: true,
-          logging:
-            configService.get<string>('NODE_ENV', 'development') !==
-            'production',
-          ssl:
-            String(
-              configService.get<string>('DB_SSL', 'false'),
-            ).toLowerCase() === 'true'
-              ? { rejectUnauthorized: false }
-              : false,
-        }),
-      }),
-    ];
+import { AuthModule } from './common/modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -40,9 +11,44 @@ const databaseImports = isTestEnvironment
       cache: true,
       expandVariables: true,
     }),
-    ...databaseImports,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
+})
+export class AppModule {}
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { databaseConfig } from './common/config/database.config';
+import { typeOrmConfig } from './database/typeorm.config';
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
+import { PatientsModule } from './modules/patients/patients.module';
+import { CliniciansModule } from './modules/clinicians/clinicians.module';
+import { DiagnosisModule } from './modules/diagnosis/diagnosis.module';
+import { RecommendationsModule } from './modules/recommendations/recommendations.module';
+import { ConsultationsModule } from './modules/consultations/consultations.module';
+import { ReportsModule } from './modules/reports/reports.module';
+import { SettingsModule } from './modules/settings/settings.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { HealthModule } from './modules/health/health.module';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true, load: [databaseConfig] }),
+    TypeOrmModule.forRoot(typeOrmConfig),
+    HealthModule,
+    AuthModule,
+    UsersModule,
+    PatientsModule,
+    CliniciansModule,
+    DiagnosisModule,
+    RecommendationsModule,
+    ConsultationsModule,
+    ReportsModule,
+    SettingsModule,
+    AdminModule
+  ]
 })
 export class AppModule {}

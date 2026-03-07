@@ -4,7 +4,7 @@ import request from 'supertest';
 
 import { AppModule } from '../src/app.module';
 
-describe('App (e2e)', () => {
+describe('AuthController (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -20,10 +20,21 @@ describe('App (e2e)', () => {
     await app.close();
   });
 
-  it('GET / should respond (placeholder expectation)', async () => {
+  it('POST /auth/login should validate payload', async () => {
     const httpServer = app.getHttpServer() as Parameters<typeof request>[0];
-    const response = await request(httpServer).get('/');
+    const response = await request(httpServer)
+      .post('/auth/login')
+      .send({ ci: '', password: '' });
 
-    expect([200, 404]).toContain(response.status);
+    expect([400, 401]).toContain(response.status);
+  });
+
+  it('POST /auth/refresh should validate payload', async () => {
+    const httpServer = app.getHttpServer() as Parameters<typeof request>[0];
+    const response = await request(httpServer)
+      .post('/auth/refresh')
+      .send({ refreshToken: '' });
+
+    expect([400, 401]).toContain(response.status);
   });
 });
