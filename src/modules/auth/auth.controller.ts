@@ -1,20 +1,25 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
-import { CliniciansService } from './clinicians.service';
-import { CreateClinicianDto } from './dto/create-clinician.dto';
-import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { Body, Controller, Post } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { LoginDto } from './dto/login.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { RegisterDto } from './dto/register.dto';
 
-@Controller('clinicians')
-@UseGuards(JwtAuthGuard)
-export class CliniciansController {
-  constructor(private readonly cliniciansService: CliniciansService) {}
+@Controller('auth')
+export class AuthController {
+  constructor(private readonly authService: AuthService) {}
 
-  @Get()
-  findAll() {
-    return this.cliniciansService.findAll();
+  @Post('register')
+  register(@Body() dto: RegisterDto) {
+    return this.authService.register(dto);
   }
 
-  @Post()
-  create(@Body() dto: CreateClinicianDto) {
-    return this.cliniciansService.create(dto);
+  @Post('login')
+  login(@Body() dto: LoginDto) {
+    return this.authService.login(dto);
+  }
+
+  @Post('refresh')
+  refresh(@Body() dto: RefreshTokenDto) {
+    return this.authService.refreshTokens(dto);
   }
 }

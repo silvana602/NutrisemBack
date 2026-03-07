@@ -1,8 +1,25 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { AuthModule } from './common/modules/auth/auth.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { databaseConfig } from './common/config/database.config';
+import { typeOrmConfig } from './database/typeorm.config';
+import { AntecedentsModule } from './modules/antecedents/antecedents.module';
+import { AnthropometricDataModule } from './modules/anthropometric-data/anthropometric-data.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { CliniciansModule } from './modules/clinicians/clinicians.module';
+import { ClinicalDataModule } from './modules/clinical-data/clinical-data.module';
+import { ConsultationsModule } from './modules/consultations/consultations.module';
+import { DiagnosesModule } from './modules/diagnoses/diagnoses.module';
+import { FoodsModule } from './modules/foods/foods.module';
+import { GuardiansModule } from './modules/guardians/guardians.module';
+import { HistoriesModule } from './modules/histories/histories.module';
+import { PatientCliniciansModule } from './modules/patient-clinicians/patient-clinicians.module';
+import { PatientProgressModule } from './modules/patient-progress/patient-progress.module';
+import { PatientsModule } from './modules/patients/patients.module';
+import { RecommendationFoodsModule } from './modules/recommendation-foods/recommendation-foods.module';
+import { RecommendationsModule } from './modules/recommendations/recommendations.module';
+import { ReportsModule } from './modules/reports/reports.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -10,45 +27,26 @@ import { AuthModule } from './common/modules/auth/auth.module';
       isGlobal: true,
       cache: true,
       expandVariables: true,
+      load: [databaseConfig],
     }),
-    AuthModule,
-  ],
-  controllers: [AppController],
-  providers: [AppService],
-})
-export class AppModule {}
-import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { databaseConfig } from './common/config/database.config';
-import { typeOrmConfig } from './database/typeorm.config';
-import { AuthModule } from './modules/auth/auth.module';
-import { UsersModule } from './modules/users/users.module';
-import { PatientsModule } from './modules/patients/patients.module';
-import { CliniciansModule } from './modules/clinicians/clinicians.module';
-import { DiagnosisModule } from './modules/diagnosis/diagnosis.module';
-import { RecommendationsModule } from './modules/recommendations/recommendations.module';
-import { ConsultationsModule } from './modules/consultations/consultations.module';
-import { ReportsModule } from './modules/reports/reports.module';
-import { SettingsModule } from './modules/settings/settings.module';
-import { AdminModule } from './modules/admin/admin.module';
-import { HealthModule } from './modules/health/health.module';
-
-@Module({
-  imports: [
-    ConfigModule.forRoot({ isGlobal: true, load: [databaseConfig] }),
     TypeOrmModule.forRoot(typeOrmConfig),
-    HealthModule,
     AuthModule,
     UsersModule,
-    PatientsModule,
     CliniciansModule,
-    DiagnosisModule,
-    RecommendationsModule,
+    PatientsModule,
+    GuardiansModule,
+    PatientCliniciansModule,
     ConsultationsModule,
+    HistoriesModule,
+    PatientProgressModule,
+    AnthropometricDataModule,
+    ClinicalDataModule,
+    AntecedentsModule,
+    DiagnosesModule,
+    RecommendationsModule,
+    FoodsModule,
+    RecommendationFoodsModule,
     ReportsModule,
-    SettingsModule,
-    AdminModule
-  ]
+  ],
 })
 export class AppModule {}

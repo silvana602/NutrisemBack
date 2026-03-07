@@ -8,7 +8,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
   app.enableCors({
     origin: true,
-    credentials: true
+    credentials: true,
   });
 
   app.useGlobalPipes(
@@ -16,12 +16,12 @@ async function bootstrap() {
       whitelist: true,
       transform: true,
       forbidNonWhitelisted: true,
-      transformOptions: { enableImplicitConversion: true }
-    })
+      transformOptions: { enableImplicitConversion: true },
+    }),
   );
 
   const port = process.env.PORT ?? 4000;
   await app.listen(port);
 }
 
-bootstrap();
+void bootstrap();
