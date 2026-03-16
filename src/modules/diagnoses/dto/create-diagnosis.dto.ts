@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsNumber, IsPositive, IsString, IsUUID } from 'class-validator';
+import { IsNumber, IsOptional, IsPositive, IsString, IsUUID } from 'class-validator';
 
 export class CreateDiagnosisDto {
   @IsUUID()
@@ -8,14 +8,16 @@ export class CreateDiagnosisDto {
   @IsUUID()
   medicalHistoryId!: string;
 
+  @IsOptional()
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsPositive()
-  bmi!: number;
+  bmi?: number;
 
+  @IsOptional()
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
-  zScorePercentile!: number;
+  zScorePercentile?: number;
 
   @IsString()
   nutritionalDiagnosis!: string;

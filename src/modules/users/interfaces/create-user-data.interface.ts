@@ -9,5 +9,5 @@ export interface CreateUserData {
   address: string;
   profilePhoto?: string | null;
   role: UserRole;
-  passwordHash: string;
+  password: string;
 }

@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsDateString, IsNumber, IsPositive, IsUUID } from 'class-validator';
+import { IsDateString, IsNumber, IsOptional, IsPositive, IsUUID } from 'class-validator';
 
 export class CreatePatientProgressDto {
   @IsUUID()
@@ -18,8 +18,9 @@ export class CreatePatientProgressDto {
   @IsPositive()
   heightCm!: number;
 
+  @IsOptional()
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsPositive()
-  bmi!: number;
+  bmi?: number;
 }

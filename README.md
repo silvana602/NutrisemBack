@@ -28,7 +28,7 @@ Archivo base: `.env.template`
 `NODE_ENV`: Entorno de ejecucion - `nutrisem`
 `PORT`: Puerto del API - `4000`
 `APP_HOST`: Host de binding - `0.0.0.0`
-`API_PREFIX`: Prefijo de rutas - `api/v1`
+`API_PREFIX`: Prefijo de rutas - `api`
 `DB_HOST`: Host de PostgreSQL - `localhost`
 `DB_PORT`: Puerto de PostgreSQL - `5432`
 `DB_USER`: Usuario de DB - `postgres`

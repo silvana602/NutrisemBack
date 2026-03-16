@@ -19,4 +19,8 @@ export class CliniciansService {
   async findAll(): Promise<Clinician[]> {
     return this.cliniciansRepository.find({ relations: { user: true } });
   }
+
+  async findByUserId(userId: string): Promise<Clinician | null> {
+    return this.cliniciansRepository.findOne({ where: { userId } });
+  }
 }

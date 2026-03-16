@@ -6,6 +6,7 @@ import { typeOrmConfig } from './database/typeorm.config';
 import { AntecedentsModule } from './modules/antecedents/antecedents.module';
 import { AnthropometricDataModule } from './modules/anthropometric-data/anthropometric-data.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { CalculationsModule } from './modules/calculations/calculations.module';
 import { CliniciansModule } from './modules/clinicians/clinicians.module';
 import { ClinicalDataModule } from './modules/clinical-data/clinical-data.module';
 import { ConsultationsModule } from './modules/consultations/consultations.module';
@@ -47,6 +48,7 @@ import { UsersModule } from './modules/users/users.module';
     FoodsModule,
     RecommendationFoodsModule,
     ReportsModule,
+    CalculationsModule,
   ],
 })
 export class AppModule {}
