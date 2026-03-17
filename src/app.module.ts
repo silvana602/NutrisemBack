@@ -17,6 +17,7 @@ import { HistoriesModule } from './modules/histories/histories.module';
 import { PatientCliniciansModule } from './modules/patient-clinicians/patient-clinicians.module';
 import { PatientProgressModule } from './modules/patient-progress/patient-progress.module';
 import { PatientsModule } from './modules/patients/patients.module';
+import { PublicModule } from './modules/public/public.module';
 import { RecommendationFoodsModule } from './modules/recommendation-foods/recommendation-foods.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
 import { ReportsModule } from './modules/reports/reports.module';
@@ -40,6 +41,7 @@ import { UsersModule } from './modules/users/users.module';
     ConsultationsModule,
     HistoriesModule,
     PatientProgressModule,
+    PublicModule,
     AnthropometricDataModule,
     ClinicalDataModule,
     AntecedentsModule,
