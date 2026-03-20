@@ -10,6 +10,7 @@ export * from './history.entity';
 export * from './patient-clinician.entity';
 export * from './patient-progress.entity';
 export * from './patient.entity';
+export * from './password-reset.entity';
 export * from './recommendation-food.entity';
 export * from './recommendation.entity';
 export * from './report.entity';

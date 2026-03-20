@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import {
@@ -15,6 +15,17 @@ import { toUserResponse } from '../users/users.mapper';
 type LoginBody = {
   ci?: unknown;
   password?: unknown;
+};
+
+type PasswordRecoveryRequestBody = {
+  ci?: unknown;
+  channel?: unknown;
+};
+
+type PasswordRecoveryResetBody = {
+  ci?: unknown;
+  code?: unknown;
+  newPassword?: unknown;
 };
 
 @Controller('auth')
@@ -83,7 +94,7 @@ export class AuthController {
 
     const accessMaxAgeMs = parseDurationToMs(
       process.env.JWT_ACCESS_EXPIRES_IN,
-      60 * 60 * 1000,
+      30 * 60 * 1000,
     );
     const refreshMaxAgeMs = parseDurationToMs(
       process.env.JWT_REFRESH_EXPIRES_IN,
@@ -105,6 +116,46 @@ export class AuthController {
       user: userPayload,
       clinician,
     };
+  }
+
+  @Post('password-recovery/request')
+  async requestPasswordRecovery(@Body() body: PasswordRecoveryRequestBody) {
+    const rawCi = typeof body.ci === 'string' ? body.ci.trim() : '';
+    const rawChannel =
+      typeof body.channel === 'string' ? body.channel.trim().toLowerCase() : '';
+
+    if (!rawCi) {
+      throw new BadRequestException('La CI es obligatoria');
+    }
+
+    if (rawChannel !== 'sms' && rawChannel !== 'whatsapp') {
+      throw new BadRequestException('Canal invalido');
+    }
+
+    const payload = await this.authService.requestPasswordRecovery(
+      rawCi,
+      rawChannel as 'sms' | 'whatsapp',
+    );
+
+    return {
+      ok: true,
+      maskedPhone: payload.maskedPhone,
+      expiresAt: payload.expiresAt,
+    };
+  }
+
+  @Post('password-recovery/reset')
+  async resetPassword(@Body() body: PasswordRecoveryResetBody) {
+    const rawCi = typeof body.ci === 'string' ? body.ci.trim() : '';
+    const rawCode = typeof body.code === 'string' ? body.code.trim() : '';
+    const rawPassword =
+      typeof body.newPassword === 'string' ? body.newPassword : '';
+
+    return this.authService.resetPasswordWithCode({
+      identityNumber: rawCi,
+      code: rawCode,
+      newPassword: rawPassword,
+    });
   }
 
   @Get('me')

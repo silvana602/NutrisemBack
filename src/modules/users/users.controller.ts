@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -29,6 +30,21 @@ export class UsersController {
     return user ? toUserResponse(user) : null;
   }
 
+  
+  @Get('exists')
+  async exists(@Query('ci') ci: string) {
+    const normalized = (ci ?? '').trim();
+    if (!normalized) {
+      return { exists: false };
+    }
+
+    const user = await this.usersService.findByIdentityNumber(normalized);
+    return {
+      exists: !!user,
+      userId: user?.userId ?? null,
+      role: user?.role ?? null,
+    };
+  }
   @Get(':id')
   async findById(@Param('id') id: string) {
     const user = await this.usersService.findByUserId(id);

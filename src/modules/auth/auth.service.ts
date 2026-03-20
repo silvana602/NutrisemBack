@@ -1,9 +1,17 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { randomInt } from 'crypto';
 import { StringValue } from 'ms';
+import { IsNull, Repository } from 'typeorm';
 import { UserRole } from 'src/common/enums/role.enum';
-import { User } from 'src/database/entities';
+import { PasswordReset, User } from 'src/database/entities';
 import { CliniciansService } from '../clinicians/clinicians.service';
 import { toClinicianResponse } from '../clinicians/clinicians.mapper';
 import { toUserResponse } from '../users/users.mapper';
@@ -25,12 +33,50 @@ const parseExpiresIn = (
   fallback: StringValue,
 ): StringValue => (value as StringValue | undefined) ?? fallback;
 
+const parseDurationToMs = (
+  value: string | undefined,
+  fallbackMs: number,
+): number => {
+  if (!value) return fallbackMs;
+
+  const normalized = value.trim();
+  const numeric = Number(normalized);
+  if (Number.isFinite(numeric)) {
+    return numeric * 1000;
+  }
+
+  const match = normalized.match(/^(\d+)(ms|s|m|h|d)$/i);
+  if (!match) return fallbackMs;
+
+  const amount = Number(match[1]);
+  const unit = match[2].toLowerCase();
+  const multipliers: Record<string, number> = {
+    ms: 1,
+    s: 1000,
+    m: 60 * 1000,
+    h: 60 * 60 * 1000,
+    d: 24 * 60 * 60 * 1000,
+  };
+
+  return amount * (multipliers[unit] ?? 1);
+};
+
+const DEFAULT_RECOVERY_TTL_MS = 10 * 60 * 1000;
+
+const maskPhone = (phone: string): string => {
+  const digits = phone.replace(/\D/g, '');
+  const last4 = digits.slice(-4).padStart(4, '0');
+  return `***${last4}`;
+};
+
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly cliniciansService: CliniciansService,
     private readonly jwtService: JwtService,
+    @InjectRepository(PasswordReset)
+    private readonly passwordResetRepository: Repository<PasswordReset>,
   ) {}
 
   async register(payload: RegisterDto) {
@@ -115,7 +161,7 @@ export class AuthService {
         process.env.JWT_ACCESS_SECRET ??
         process.env.JWT_SECRET ??
         'super_secret_key',
-      expiresIn: parseExpiresIn(process.env.JWT_ACCESS_EXPIRES_IN, '15m'),
+      expiresIn: parseExpiresIn(process.env.JWT_ACCESS_EXPIRES_IN, '30m'),
     });
 
     const refreshToken = await this.jwtService.signAsync(jwtPayload, {
@@ -133,6 +179,122 @@ export class AuthService {
       refreshToken,
       ...session,
     };
+  }
+
+  async requestPasswordRecovery(identityNumber: string, channel: 'sms' | 'whatsapp') {
+    const normalized = identityNumber.trim();
+    if (!normalized) {
+      throw new BadRequestException('La CI es obligatoria');
+    }
+
+    const user = await this.usersService.findByIdentityNumber(normalized);
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    const phone = (user.phone ?? '').trim();
+    if (!phone) {
+      throw new BadRequestException('No existe un telefono registrado');
+    }
+
+    const ttlMs = parseDurationToMs(
+      process.env.PASSWORD_RECOVERY_EXPIRES_IN,
+      DEFAULT_RECOVERY_TTL_MS,
+    );
+    const expiresAt = new Date(Date.now() + ttlMs);
+    const code = randomInt(100000, 999999).toString();
+    const codeHash = await bcrypt.hash(code, 10);
+
+    await this.passwordResetRepository.update(
+      { userId: user.userId, usedAt: IsNull() },
+      { usedAt: new Date() },
+    );
+
+    const reset = this.passwordResetRepository.create({
+      userId: user.userId,
+      codeHash,
+      deliveryChannel: channel,
+      expiresAt,
+      usedAt: null,
+      attempts: 0,
+    });
+
+    await this.passwordResetRepository.save(reset);
+
+    // Placeholder for SMS/WhatsApp provider integration.
+    console.log(
+      `[PasswordRecovery] Envio a ${phone} via ${channel} codigo ${code}`,
+    );
+
+    return {
+      maskedPhone: maskPhone(phone),
+      expiresAt,
+    };
+  }
+
+  async resetPasswordWithCode(input: {
+    identityNumber: string;
+    code: string;
+    newPassword: string;
+  }) {
+    const normalized = input.identityNumber.trim();
+    if (!normalized) {
+      throw new BadRequestException('La CI es obligatoria');
+    }
+    if (!input.code?.trim()) {
+      throw new BadRequestException('El codigo es obligatorio');
+    }
+    if (!input.newPassword || input.newPassword.length < 8) {
+      throw new BadRequestException(
+        'La contrasena debe tener al menos 8 caracteres',
+      );
+    }
+
+    const user = await this.usersService.findByIdentityNumber(normalized);
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    const reset = await this.passwordResetRepository.findOne({
+      where: { userId: user.userId, usedAt: IsNull() },
+      order: { createdAt: 'DESC' },
+    });
+
+    if (!reset) {
+      throw new BadRequestException('No existe un codigo valido');
+    }
+
+    if (reset.expiresAt.getTime() < Date.now()) {
+      await this.passwordResetRepository.update(reset.passwordResetId, {
+        usedAt: new Date(),
+      });
+      throw new BadRequestException('El codigo ha expirado');
+    }
+
+    const maxAttempts = parseNumericEnv(
+      process.env.PASSWORD_RECOVERY_MAX_ATTEMPTS,
+      5,
+    );
+
+    const match = await bcrypt.compare(input.code.trim(), reset.codeHash);
+    if (!match) {
+      const nextAttempts = (reset.attempts ?? 0) + 1;
+      await this.passwordResetRepository.update(reset.passwordResetId, {
+        attempts: nextAttempts,
+        usedAt: nextAttempts >= maxAttempts ? new Date() : null,
+      });
+      throw new BadRequestException('Codigo invalido');
+    }
+
+    await this.usersService.update(user.userId, {
+      password: input.newPassword,
+    });
+
+    await this.passwordResetRepository.update(reset.passwordResetId, {
+      usedAt: new Date(),
+    });
+
+    return { ok: true };
   }
 
   private async buildSessionResponse(user: User) {
